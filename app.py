@@ -1,21 +1,21 @@
 from flask import Flask, request, Response, jsonify
 from flask_cors import CORS
 import os
+import json
 
 import tensorflow as tf
 from tensorflow import keras
 from keras import layers
 import numpy as np 
-import json
-from init_model import create_model
 
+from init_model import create_model
 
 app = Flask(__name__)
 CORS(app, resources={f"/*": {"origins": "*"}})
 
 @app.route("/")
 def hello():
-    return jsonify({"error": "Something went wrong!"})
+    return jsonify({"Greeting": "Hi! Anything new?"})
 
 @app.route("/api/<string:id>/")
 def get_user(id):
@@ -44,15 +44,14 @@ def save():
     model = create_model()
 
     model.fit(train_images, train_labels,  epochs = 10,
-          validation_data = (test_images,test_labels),
+          validation_data = (test_images, test_labels),
           callbacks = [cp_callback])
-    model.save('my_model.h5')
-    return model.layers
+    model.save('model.h5')
+    return str(model)
 
 @app.route("/predict", methods=["GET"])
 def predict():
-    new_model = keras.models.load_model('my_model.h5')
-    # print(new_model.summary())
+    new_model = keras.models.load_model('model.h5')
 
     (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.mnist.load_data()
     train_labels = train_labels[:1000]
@@ -61,8 +60,12 @@ def predict():
     test_images = test_images[:1000].reshape(-1, 28 * 28) / 255.0
 
     # loss, acc = new_model.evaluate(test_images, test_labels)
-    result = new_model.predict(np.expand_dims(test_images[29], 0))
-    return str(result)
+    predict = new_model.predict(np.expand_dims(test_images[29], 0))
+    probabilities = sorted(predict[0], reverse = True)
+
+    probabilities = [ { "result": str(np.where(predict[0] == probability)[0][0]), "probability": str(probability * 100) } for probability in probabilities ]
+
+    return jsonify(probabilities[:3])
 
 if __name__ == "__main__":
     app.run(debug=True)

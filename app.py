@@ -1,17 +1,13 @@
 from flask import Flask, request, Response, jsonify
-from flask_cors import CORS
 import os
 import json
 
 import tensorflow as tf
-from tensorflow import keras
-from keras import layers
 import numpy as np 
 
 from init_model import create_model
 
 app = Flask(__name__)
-CORS(app, resources={f"/*": {"origins": "*"}})
 
 @app.route("/")
 def hello():
@@ -61,7 +57,7 @@ def save():
 
 @app.route("/predict/<int:number>/", methods=["GET"])
 def predict(number):
-    new_model = keras.models.load_model('model.h5')
+    new_model = tf.keras.models.load_model('model.h5')
 
     (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.mnist.load_data()
     train_labels = train_labels[:1000]
